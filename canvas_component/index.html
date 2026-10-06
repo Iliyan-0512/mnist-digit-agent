@@ -1,0 +1,103 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  body { margin: 0; font-family: system-ui, sans-serif; background: transparent; }
+  #wrap { display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap; }
+  canvas { background: #000; border: 1px solid #666; border-radius: 8px;
+           touch-action: none; cursor: crosshair; display: block; }
+  button { padding: 8px 14px; border: 1px solid #888; border-radius: 8px;
+           background: #f3f3f3; color: #222; cursor: pointer; font-size: 14px; }
+  button:hover { background: #e4e4e4; }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="c" width="280" height="280"></canvas>
+  <button id="clear">🗑 Изчисти</button>
+</div>
+
+<script>
+  // Протокол на Streamlit компонентите: съобщения към родителския прозорец.
+  function send(type, data) {
+    window.parent.postMessage(Object.assign({ isStreamlitMessage: true, type: type }, data), "*");
+  }
+
+  const SIZE = 280;
+  const canvas = document.getElementById("c");
+  const ctx = canvas.getContext("2d");
+  let brush = 22;       // дебела четка: тънък щрих се губи при смаляване до 28x28
+  let drawing = false;
+  let last = null;
+  let count = 0;        // нов брой при всяка нова рисунка/изчистване
+
+  function fillBackground() {
+    ctx.fillStyle = "#000";
+    ctx.fillRect(0, 0, SIZE, SIZE);
+  }
+
+  function position(e) {
+    const r = canvas.getBoundingClientRect();
+    return [(e.clientX - r.left) * SIZE / r.width, (e.clientY - r.top) * SIZE / r.height];
+  }
+
+  function dot(p) {
+    ctx.fillStyle = "#fff";
+    ctx.beginPath();
+    ctx.arc(p[0], p[1], brush / 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function publish(png) {
+    count += 1;
+    send("streamlit:setComponentValue", { value: { png: png, n: count }, dataType: "json" });
+  }
+
+  canvas.addEventListener("pointerdown", function (e) {
+    drawing = true;
+    canvas.setPointerCapture(e.pointerId);
+    last = position(e);
+    dot(last);
+  });
+
+  canvas.addEventListener("pointermove", function (e) {
+    if (!drawing) return;
+    const p = position(e);
+    ctx.strokeStyle = "#fff";
+    ctx.lineWidth = brush;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(last[0], last[1]);
+    ctx.lineTo(p[0], p[1]);
+    ctx.stroke();
+    last = p;
+  });
+
+  // Изпращаме в края на щриха, не при всяко движение.
+  function endStroke() {
+    if (!drawing) return;
+    drawing = false;
+    publish(canvas.toDataURL("image/png"));
+  }
+  canvas.addEventListener("pointerup", endStroke);
+  canvas.addEventListener("pointercancel", endStroke);
+
+  document.getElementById("clear").addEventListener("click", function () {
+    fillBackground();
+    publish(null);
+  });
+
+  window.addEventListener("message", function (event) {
+    if (event.data.type !== "streamlit:render") return;
+    const args = event.data.args || {};
+    if (args.brush) brush = args.brush;
+  });
+
+  fillBackground();
+  send("streamlit:componentReady", { apiVersion: 1 });
+  send("streamlit:setFrameHeight", { height: SIZE + 24 });
+</script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+# Тествано с: Python 3.12.3, torch 2.14.1, torchvision 0.29.1, streamlit 1.65.0,
+# numpy 2.5.3, matplotlib 3.11.2, scikit-learn 1.9.1 (Ubuntu 24.04 под WSL2).
+# Други версии не са проверявани.
+torch>=2.14
+torchvision>=0.29
+streamlit>=1.65
+numpy
+pandas
+matplotlib
+scikit-learn
+pillow
+requests

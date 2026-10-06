@@ -1,0 +1,19 @@
+# среда и кеш
+venv/
+__pycache__/
+*.pyc
+.env
+.streamlit/secrets.toml
+
+# MNIST се сваля автоматично при първо обучение (~64 MB)
+data/
+
+# лични примери за дообучение
+feedback/
+
+# временни и резервни модели (best_model.pt и history.json се пазят в репото)
+models/new_model.pt
+models/finetuned_model.pt
+models/best_model.backup.pt
+models/best_model.no_augmentation.pt
+models/history.no_augmentation.json
